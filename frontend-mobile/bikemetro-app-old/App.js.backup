@@ -1,0 +1,153 @@
+import React from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createStackNavigator } from '@react-navigation/stack';
+import { View, Text, ActivityIndicator, StyleSheet, TouchableOpacity } from 'react-native';
+import { AuthProvider, useAuth } from './src/context/AuthContext';
+import LoginScreen from './src/screens/Auth/LoginScreen';
+import RegisterScreen from './src/screens/Auth/RegisterScreen';
+import COLORS from './src/constants/colors';
+
+const Stack = createStackNavigator();
+
+function AuthNavigator() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="Register" component={RegisterScreen} />
+    </Stack.Navigator>
+  );
+}
+
+function HomeScreen() {
+  const { user, logout } = useAuth();
+  
+  return (
+    <View style={styles.homeContainer}>
+      <Text style={styles.welcomeText}>¡Bienvenido!</Text>
+      <Text style={styles.userText}>{user?.nickname || user?.username}</Text>
+      <Text style={styles.emailText}>{user?.email}</Text>
+      
+      <View style={styles.infoBox}>
+        <Text style={styles.infoTitle}>✅ Autenticación Exitosa</Text>
+        <Text style={styles.infoText}>
+          Has iniciado sesión correctamente.{'\n'}
+          Próximos pasos: Crear pantallas principales
+        </Text>
+      </View>
+      
+      <TouchableOpacity onPress={logout} style={styles.logoutButton}>
+        <Text style={styles.logoutText}>Cerrar Sesión</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+function MainNavigator() {
+  return (
+    <Stack.Navigator>
+      <Stack.Screen 
+        name="Home" 
+        component={HomeScreen}
+        options={{ 
+          title: 'BikeMetro',
+          headerStyle: { backgroundColor: COLORS.primary },
+          headerTintColor: '#fff',
+        }}
+      />
+    </Stack.Navigator>
+  );
+}
+
+function RootNavigator() {
+  const { isAuthenticated, loading } = useAuth();
+
+  if (loading === true) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+        <Text style={styles.loadingText}>Cargando...</Text>
+      </View>
+    );
+  }
+
+  return isAuthenticated === true ? <MainNavigator /> : <AuthNavigator />;
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <NavigationContainer>
+        <RootNavigator />
+      </NavigationContainer>
+    </AuthProvider>
+  );
+}
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#6B7280',
+  },
+  homeContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    padding: 20,
+  },
+  welcomeText: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#DC2626',
+    marginBottom: 8,
+  },
+  userText: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 4,
+  },
+  emailText: {
+    fontSize: 16,
+    color: '#6B7280',
+    marginBottom: 30,
+  },
+  infoBox: {
+    backgroundColor: '#F9FAFB',
+    padding: 20,
+    borderRadius: 12,
+    width: '100%',
+    marginBottom: 30,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  infoTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#10B981',
+    marginBottom: 8,
+  },
+  infoText: {
+    fontSize: 14,
+    color: '#6B7280',
+    lineHeight: 20,
+  },
+  logoutButton: {
+    backgroundColor: '#DC2626',
+    paddingHorizontal: 30,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  logoutText: {
+    fontSize: 16,
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+});
