@@ -220,12 +220,13 @@ class EstacionListSerializer(serializers.ModelSerializer):
             'nombre',
             'linea',
             'linea_display',
+            'latitud',
+            'longitud',
             'estado',
             'estado_display',
             'espacios_totales',
             'espacios_disponibles',
         ]
-
 
 class EstacionDetailSerializer(serializers.ModelSerializer):
     """Serializer detallado de estación con sus espacios"""

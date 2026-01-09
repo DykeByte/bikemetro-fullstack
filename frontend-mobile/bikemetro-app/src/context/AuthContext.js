@@ -151,6 +151,49 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const updateProfile = async (updatedData) => {
+    try {
+      // Actualizar usuario en estado local
+      const updatedUser = { ...user, ...updatedData };
+      setUser(updatedUser);
+      
+      // Actualizar en storage
+      const session = await storage.getSession();
+      if (session.token) {
+        await storage.saveSession(
+          { access: session.token, refresh: session.refreshToken },
+          updatedUser
+        );
+      }
+      
+      return { success: true };
+    } catch (error) {
+      console.error('Error actualizando perfil en context:', error);
+      return { success: false };
+    }
+  };
+
+  const refreshUser = async () => {
+    try {
+      const result = await api.getProfile();
+      if (result.success) {
+        setUser(result.data);
+        const session = await storage.getSession();
+        if (session.token) {
+          await storage.saveSession(
+            { access: session.token, refresh: session.refreshToken },
+            result.data
+          );
+        }
+        return { success: true };
+      }
+      return { success: false };
+    } catch (error) {
+      console.error('Error al refrescar usuario:', error);
+      return { success: false };
+    }
+  };
+
   const value = {
     user,
     isAuthenticated: authState.isAuthenticated,
@@ -158,6 +201,8 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
+    updateProfile,
+    refreshUser,
   };
 
   return (

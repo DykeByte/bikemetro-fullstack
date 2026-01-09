@@ -19,8 +19,8 @@ export const ESTADOS_ESPACIO = {
 };
 
 export const COLORES_ESTADO_ESPACIO = {
-  DISPONIBLE: '#10B981',
-  OCUPADO: '#EF4444',
-  RESERVADO: '#3B82F6',
-  MANTENIMIENTO: '#F59E0B',
+  DISPONIBLE: '#10B981',      // Verde
+  OCUPADO: '#EF4444',          // Rojo
+  RESERVADO: '#F59E0B',        // Amarillo/Naranja ← CAMBIADO
+  MANTENIMIENTO: '#9CA3AF',    // Gris
 };

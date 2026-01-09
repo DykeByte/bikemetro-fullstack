@@ -95,6 +95,11 @@ class Estacion(models.Model):
     nombre = models.CharField(max_length=100, unique=True)
     linea = models.CharField(max_length=3, choices=LINEAS_CHOICES, default='L1')
     
+    # Coordenadas GPS
+    latitud = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
+    longitud = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
+
+
     # Estado operacional
     estado = models.CharField(
         max_length=10, 

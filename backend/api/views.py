@@ -10,6 +10,10 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from django.utils import timezone
 from django.db.models import Q
 from datetime import timedelta
+from django.contrib.auth import get_user_model
+
+Usuario = get_user_model()
+
 
 from .models import (
     Usuario, Estacion, EspacioEstacionamiento, 
@@ -27,127 +31,71 @@ from .serializers import (
 
 # ============ USUARIO VIEWS ============
 class UsuarioViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet para gestión de usuarios
+    """ViewSet para gestión de usuarios"""
+    serializer_class = UsuarioPerfilSerializer
+    permission_classes = [permissions.IsAuthenticated]
     
-    list: Listar todos los usuarios (solo admin)
-    retrieve: Ver detalle de un usuario
-    create: Registrar nuevo usuario (público)
-    update: Actualizar usuario
-    partial_update: Actualizar parcialmente usuario
-    destroy: Eliminar usuario
-    me: Obtener información del usuario actual
-    """
-    queryset = Usuario.objects.all()
-    serializer_class = UsuarioSerializer
+    def get_queryset(self):
+        """Solo el propio usuario"""
+        return Usuario.objects.filter(id=self.request.user.id)
     
-    def get_permissions(self):
-        """Permisos según la acción"""
-        if self.action == 'create':
-            # Registro público
-            return [permissions.AllowAny()]
-        elif self.action in ['me', 'update', 'partial_update']:
-            # Solo usuarios autenticados
-            return [permissions.IsAuthenticated()]
-        else:
-            # Otras acciones requieren ser admin
-            return [permissions.IsAdminUser()]
-    
-    def get_serializer_class(self):
-        """Serializer según la acción"""
-        if self.action == 'create':
-            return UsuarioRegistroSerializer
-        elif self.action in ['me', 'update', 'partial_update']:
-            return UsuarioPerfilSerializer
-        return UsuarioSerializer
-    
-    @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated])
+    @action(detail=False, methods=['get', 'patch', 'put'])
     def me(self, request):
         """
-        Obtener información del usuario actual
+        Obtener o actualizar perfil del usuario actual
         GET /api/usuarios/me/
+        PATCH /api/usuarios/me/
+        PUT /api/usuarios/me/
         """
-        serializer = UsuarioPerfilSerializer(request.user)
-        return Response(serializer.data)
-    
-    @action(detail=False, methods=['put', 'patch'], permission_classes=[permissions.IsAuthenticated])
-    def update_profile(self, request):
-        """
-        Actualizar perfil del usuario actual
-        PUT/PATCH /api/usuarios/update_profile/
-        """
-        serializer = UsuarioPerfilSerializer(
-            request.user, 
-            data=request.data, 
-            partial=request.method == 'PATCH'
-        )
-        if serializer.is_valid():
-            serializer.save()
+        user = request.user
+        
+        if request.method == 'GET':
+            serializer = UsuarioPerfilSerializer(user)
             return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        elif request.method in ['PATCH', 'PUT']:
+            partial = request.method == 'PATCH'
+            serializer = UsuarioPerfilSerializer(
+                user,
+                data=request.data,
+                partial=partial
+            )
+            
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data)
+            
+            return Response(
+                serializer.errors,
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        return Response(
+            {'error': 'Método no permitido'},
+            status=status.HTTP_405_METHOD_NOT_ALLOWED
+        )
 
 
 # ============ ESTACIÓN VIEWS ============
 class EstacionViewSet(viewsets.ReadOnlyModelViewSet):
-    """
-    ViewSet para consulta de estaciones (solo lectura)
-    
-    list: Listar todas las estaciones activas
-    retrieve: Ver detalle de una estación con sus espacios
-    disponibles: Ver solo estaciones con espacios disponibles
-    cercanas: Obtener estaciones cercanas (futuro con geolocalización)
-    """
-    queryset = Estacion.objects.filter(estado='ACTIVO')
-    permission_classes = [permissions.IsAuthenticated]
+    """ViewSet para estaciones (solo lectura)"""
+    queryset = Estacion.objects.filter(estado='ACTIVO').order_by('linea', 'nombre')
+    serializer_class = EstacionListSerializer
+    permission_classes = [permissions.AllowAny]
+    pagination_class = None  # Desactivar paginación para estaciones
     
     def get_serializer_class(self):
-        """Serializer según la acción"""
-        if self.action == 'list':
-            return EstacionListSerializer
-        return EstacionDetailSerializer
+        if self.action == 'retrieve':
+            return EstacionDetailSerializer
+        return EstacionListSerializer
     
-    @action(detail=False, methods=['get'])
-    def disponibles(self, request):
-        """
-        Obtener estaciones con espacios disponibles
-        GET /api/estaciones/disponibles/
-        """
-        estaciones = self.get_queryset()
-        # Filtrar solo las que tienen espacios disponibles
-        estaciones_con_espacios = [
-            e for e in estaciones if e.espacios_disponibles > 0
-        ]
-        serializer = EstacionListSerializer(estaciones_con_espacios, many=True)
-        return Response(serializer.data)
-    
-    @action(detail=False, methods=['get'])
-    def cercanas(self, request):
-        """
-        Obtener estaciones cercanas (por ahora devuelve todas)
-        GET /api/estaciones/cercanas/?lat=-33.4489&lng=-70.6693
-        
-        Futuro: implementar cálculo de distancia real
-        """
-        lat = request.query_params.get('lat')
-        lng = request.query_params.get('lng')
-        
-        # Por ahora devuelve todas las estaciones
-        # TODO: Implementar cálculo de distancia con lat/lng
-        estaciones = self.get_queryset()
-        serializer = EstacionListSerializer(estaciones, many=True)
-        return Response(serializer.data)
-    
-    @action(detail=True, methods=['get'])
+    @action(detail=True, methods=['get'], permission_classes=[permissions.AllowAny])
     def espacios(self, request, pk=None):
-        """
-        Obtener matriz de espacios de una estación
-        GET /api/estaciones/{id}/espacios/
-        """
+        """Obtener espacios de una estación"""
         estacion = self.get_object()
         espacios = estacion.espacios.all().order_by('fila', 'columna')
         serializer = EspacioEstacionamientoSerializer(espacios, many=True)
         return Response(serializer.data)
-
 
 # ============ RESERVA VIEWS ============
 class ReservaViewSet(viewsets.ModelViewSet):

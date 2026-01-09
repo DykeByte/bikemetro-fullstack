@@ -18,7 +18,7 @@ export default function ProfileScreen({ navigation }) {
   };
 
   const handleEditProfile = () => {
-    Alert.alert('Próximamente', 'Función de editar perfil en desarrollo');
+    navigation.navigate('EditProfile');
   };
 
   const handleViewHistory = () => {

@@ -27,6 +27,15 @@ export const getProfile = async () => {
   }
 };
 
+export const updateProfile = async (profileData) => {
+  try {
+    const response = await apiClient.patch('/usuarios/me/', profileData);
+    return { success: true, data: response.data };
+  } catch (error) {
+    return { success: false, error: handleApiError(error) };
+  }
+};
+
 export const getEstaciones = async () => {
   try {
     const response = await apiClient.get('/estaciones/');
@@ -54,9 +63,27 @@ export const createReserva = async (reservaData) => {
   }
 };
 
+export const cancelReserva = async (reservaId) => {
+  try {
+    const response = await apiClient.post('/reservas/' + reservaId + '/cancelar/');
+    return { success: true, data: response.data };
+  } catch (error) {
+    return { success: false, error: handleApiError(error) };
+  }
+};
+
 export const getReservasActivas = async () => {
   try {
     const response = await apiClient.get('/reservas/activas/');
+    return { success: true, data: response.data };
+  } catch (error) {
+    return { success: false, error: handleApiError(error) };
+  }
+};
+
+export const getHistorialReservas = async () => {
+  try {
+    const response = await apiClient.get('/reservas/historial/');
     return { success: true, data: response.data };
   } catch (error) {
     return { success: false, error: handleApiError(error) };

@@ -10,7 +10,9 @@ import HomeScreen from './src/screens/Home/HomeScreen';
 import StationDetailScreen from './src/screens/Stations/StationDetailScreen';
 import ActiveReservationScreen from './src/screens/Reservations/ActiveReservationScreen';
 import ProfileScreen from './src/screens/Profile/ProfileScreen';
+import EditProfileScreen from './src/screens/Profile/EditProfileScreen';
 import ReservationHistoryScreen from './src/screens/Profile/ReservationHistoryScreen';
+import MapScreen from './src/screens/Map/MapScreen';
 import COLORS from './src/constants/colors';
 
 const Stack = createStackNavigator();
@@ -58,6 +60,23 @@ function HomeStack() {
   );
 }
 
+function MapStack() {
+  return (
+    <Stack.Navigator>
+      <Stack.Screen 
+        name="MapMain" 
+        component={MapScreen}
+        options={{ 
+          title: 'Mapa de Estaciones',
+          headerStyle: { backgroundColor: COLORS.primary },
+          headerTintColor: '#fff',
+          headerTitleStyle: { fontWeight: 'bold' },
+        }}
+      />
+    </Stack.Navigator>
+  );
+}
+
 function ProfileStack() {
   return (
     <Stack.Navigator>
@@ -66,6 +85,16 @@ function ProfileStack() {
         component={ProfileScreen}
         options={{ 
           title: 'Mi Perfil',
+          headerStyle: { backgroundColor: COLORS.primary },
+          headerTintColor: '#fff',
+          headerTitleStyle: { fontWeight: 'bold' },
+        }}
+      />
+      <Stack.Screen 
+        name="EditProfile" 
+        component={EditProfileScreen}
+        options={{ 
+          title: 'Editar Perfil',
           headerStyle: { backgroundColor: COLORS.primary },
           headerTintColor: '#fff',
           headerTitleStyle: { fontWeight: 'bold' },
@@ -106,6 +135,16 @@ function MainNavigator() {
           tabBarLabel: 'Inicio',
           tabBarIcon: ({ color, size }) => (
             <Text style={{ fontSize: size, color }}>🏠</Text>
+          ),
+        }}
+      />
+      <Tab.Screen 
+        name="Map" 
+        component={MapStack}
+        options={{
+          tabBarLabel: 'Mapa',
+          tabBarIcon: ({ color, size }) => (
+            <Text style={{ fontSize: size, color }}>🗺️</Text>
           ),
         }}
       />

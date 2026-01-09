@@ -52,36 +52,41 @@ export default function StationDetailScreen({ route, navigation }) {
 
     Alert.alert(
       'Confirmar Reserva',
-      'Deseas reservar el espacio ' + selectedSpace.codigo + '?\n\nTendras 10 minutos para confirmar tu llegada.',
+      'Deseas reservar el espacio ' + selectedSpace.codigo + '?\n\n' +
+      '🕐 Tendras 10 minutos para confirmar tu llegada.\n' +
+      '🎁 Las primeras 2 horas son GRATIS.\n' +
+      '💰 Horas extras: $500 por hora.',
       [
         { text: 'Cancelar', style: 'cancel' },
         { 
           text: 'Confirmar', 
-          onPress: async () => {
-            setCreating(true);
-            try {
-              const result = await api.createReserva({
-                estacion: estacion.id,
-                espacio: selectedSpace.id,
-              });
-
-              if (result.success) {
-                navigation.replace('ActiveReservation', { 
-                  reserva: result.data 
-                });
-              } else {
-                Alert.alert('Error', result.error?.message || 'No se pudo crear la reserva');
-              }
-            } catch (error) {
-              console.error('Error creando reserva:', error);
-              Alert.alert('Error', 'Ocurrio un error al crear la reserva');
-            } finally {
-              setCreating(false);
-            }
-          }
+          onPress: crearReserva
         },
       ]
     );
+  };
+
+  const crearReserva = async () => {
+    setCreating(true);
+    try {
+      const result = await api.createReserva({
+        estacion: estacion.id,
+        espacio: selectedSpace.id,
+      });
+
+      if (result.success) {
+        navigation.replace('ActiveReservation', { 
+          reserva: result.data 
+        });
+      } else {
+        Alert.alert('Error', result.error?.message || 'No se pudo crear la reserva');
+      }
+    } catch (error) {
+      console.error('Error creando reserva:', error);
+      Alert.alert('Error', 'Ocurrio un error al crear la reserva');
+    } finally {
+      setCreating(false);
+    }
   };
 
   if (loading) {
@@ -112,6 +117,26 @@ export default function StationDetailScreen({ route, navigation }) {
               <Text style={styles.statLabel}>Total</Text>
             </View>
           </View>
+        </View>
+
+        {/* INFO BOX DE TARIFAS */}
+        <View style={styles.pricingInfo}>
+          <Text style={styles.pricingTitle}>💰 Tarifas</Text>
+          <View style={styles.pricingRow}>
+            <Text style={styles.pricingLabel}>🎁 Primeras 2 horas:</Text>
+            <Text style={styles.pricingValue}>GRATIS</Text>
+          </View>
+          <View style={styles.pricingRow}>
+            <Text style={styles.pricingLabel}>💵 Hora extra:</Text>
+            <Text style={styles.pricingValue}>$500</Text>
+          </View>
+          <View style={styles.pricingRow}>
+            <Text style={styles.pricingLabel}>⏱️ Tiempo para llegar:</Text>
+            <Text style={styles.pricingValue}>10 minutos</Text>
+          </View>
+          <Text style={styles.pricingNote}>
+            ℹ️ El tiempo gratis comienza al escanear el QR de entrada
+          </Text>
         </View>
 
         <SpaceMatrix
@@ -203,6 +228,40 @@ const styles = StyleSheet.create({
     color: COLORS.textWhite,
     opacity: 0.9,
     marginTop: 4,
+  },
+  pricingInfo: {
+    margin: 16,
+    padding: 16,
+    backgroundColor: '#DBEAFE',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#3B82F6',
+  },
+  pricingTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1E40AF',
+    marginBottom: 12,
+  },
+  pricingRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  pricingLabel: {
+    fontSize: 14,
+    color: '#1E40AF',
+  },
+  pricingValue: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#1E40AF',
+  },
+  pricingNote: {
+    fontSize: 12,
+    color: '#1E40AF',
+    marginTop: 8,
+    fontStyle: 'italic',
   },
   selectionInfo: {
     margin: 16,

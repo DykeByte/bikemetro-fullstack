@@ -9,12 +9,15 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
+import * as api from '../../api/endpoints';
 import COLORS from '../../constants/colors';
 
 export default function ActiveReservationScreen({ route, navigation }) {
-  const { reserva } = route.params;
+  const { reserva: initialReserva } = route.params;
+  const [reserva, setReserva] = useState(initialReserva);
   const [timeRemaining, setTimeRemaining] = useState(null);
   const [showQREntrada, setShowQREntrada] = useState(true);
+  const [canceling, setCanceling] = useState(false);
 
   useEffect(() => {
     if (reserva.fecha_expiracion_reserva) {
@@ -47,13 +50,37 @@ export default function ActiveReservationScreen({ route, navigation }) {
         {
           text: 'Si, cancelar',
           style: 'destructive',
-          onPress: () => {
-            Alert.alert('Info', 'Funcionalidad de cancelar en desarrollo');
-            navigation.navigate('Home');
-          },
+          onPress: confirmarCancelacion,
         },
       ]
     );
+  };
+
+  const confirmarCancelacion = async () => {
+    setCanceling(true);
+    try {
+      const result = await api.cancelReserva(reserva.id);
+      
+      if (result.success) {
+        Alert.alert(
+          'Reserva Cancelada',
+          'Tu reserva ha sido cancelada exitosamente',
+          [
+            {
+              text: 'OK',
+              onPress: () => navigation.navigate('Home'),
+            },
+          ]
+        );
+      } else {
+        Alert.alert('Error', result.error?.message || 'No se pudo cancelar la reserva');
+      }
+    } catch (error) {
+      console.error('Error cancelando reserva:', error);
+      Alert.alert('Error', 'Ocurrio un error al cancelar la reserva');
+    } finally {
+      setCanceling(false);
+    }
   };
 
   const getEstadoInfo = () => {
@@ -101,6 +128,7 @@ export default function ActiveReservationScreen({ route, navigation }) {
   };
 
   const estadoInfo = getEstadoInfo();
+  const puedeCancel = ['PENDIENTE', 'CONFIRMADA'].includes(reserva.estado);
 
   return (
     <ScrollView style={styles.container}>
@@ -183,9 +211,6 @@ export default function ActiveReservationScreen({ route, navigation }) {
             ) : (
               <View style={styles.qrError}>
                 <Text style={styles.qrErrorText}>⚠️ QR no disponible</Text>
-                <Text style={styles.qrErrorHint}>
-                  Los codigos QR se generan al crear la reserva
-                </Text>
               </View>
             )}
           </View>
@@ -207,20 +232,21 @@ export default function ActiveReservationScreen({ route, navigation }) {
               {estadoInfo.texto}
             </Text>
           </View>
-          {reserva.costo_total > 0 && (
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Costo:</Text>
-              <Text style={styles.detailValue}>${reserva.costo_total}</Text>
-            </View>
-          )}
         </View>
 
-        <TouchableOpacity
-          style={styles.cancelButton}
-          onPress={handleCancelar}
-        >
-          <Text style={styles.cancelButtonText}>Cancelar Reserva</Text>
-        </TouchableOpacity>
+        {puedeCancel && (
+          <TouchableOpacity
+            style={[styles.cancelButton, canceling && styles.buttonDisabled]}
+            onPress={handleCancelar}
+            disabled={canceling}
+          >
+            {canceling ? (
+              <ActivityIndicator color={COLORS.textWhite} />
+            ) : (
+              <Text style={styles.cancelButtonText}>Cancelar Reserva</Text>
+            )}
+          </TouchableOpacity>
+        )}
 
         <TouchableOpacity
           style={styles.backButton}
@@ -378,12 +404,6 @@ const styles = StyleSheet.create({
   qrErrorText: {
     fontSize: 16,
     color: COLORS.error,
-    marginBottom: 8,
-  },
-  qrErrorHint: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
   },
   detailsCard: {
     backgroundColor: COLORS.background,
@@ -424,6 +444,9 @@ const styles = StyleSheet.create({
     color: COLORS.textWhite,
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  buttonDisabled: {
+    backgroundColor: COLORS.textLight,
   },
   backButton: {
     backgroundColor: COLORS.textLight,
